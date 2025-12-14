@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Mic, MicOff, Volume2, Languages, ArrowRightLeft } from 'lucide-react'
+import { Mic, MicOff, Volume2, Languages, ArrowRightLeft, Settings, X } from 'lucide-react'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -28,6 +28,11 @@ export default function ChatInterface() {
   const [translationSourceLang, setTranslationSourceLang] = useState('EN')
   const [translationTargetLang, setTranslationTargetLang] = useState('JA')
   const [isTranslating, setIsTranslating] = useState(false)
+  const [showTranslationModal, setShowTranslationModal] = useState(false)
+  
+  // 設定の状態
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [speechRate, setSpeechRate] = useState(1.0)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
@@ -258,7 +263,7 @@ export default function ChatInterface() {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(text)
       utterance.lang = 'en-US'
-      utterance.rate = 0.9
+      utterance.rate = speechRate
       window.speechSynthesis.speak(utterance)
     }
   }
@@ -304,12 +309,49 @@ export default function ChatInterface() {
     setTranslationOutput(translationInput)
   }
 
+  // 翻訳言語の自動切り替えロジック
+  const handleSourceLangChange = (newLang: string) => {
+    setTranslationSourceLang(newLang)
+    // 入力言語を変更したら、出力言語を自動的に反対にする
+    if (newLang === 'EN') {
+      setTranslationTargetLang('JA')
+    } else if (newLang === 'JA') {
+      setTranslationTargetLang('EN')
+    }
+  }
+
+  const handleTargetLangChange = (newLang: string) => {
+    setTranslationTargetLang(newLang)
+    // 出力言語を変更したら、入力言語を自動的に反対にする
+    if (newLang === 'EN') {
+      setTranslationSourceLang('JA')
+    } else if (newLang === 'JA') {
+      setTranslationSourceLang('EN')
+    }
+  }
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       {/* ヘッダー */}
       <header className="bg-white shadow-sm border-b border-gray-200 px-4 py-3">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <h1 className="text-xl font-bold text-gray-900">AI英会話アプリ</h1>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowTranslationModal(true)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="翻訳ツール"
+            >
+              <Languages className="w-5 h-5 text-gray-700" />
+            </button>
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="設定"
+            >
+              <Settings className="w-5 h-5 text-gray-700" />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -420,62 +462,6 @@ export default function ChatInterface() {
                     )}
                   </div>
 
-                  {/* コンパクトな翻訳ツール */}
-                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Languages className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium text-gray-700">クイック翻訳</span>
-                    </div>
-                    <div className="flex gap-2 items-center">
-                      <select
-                        value={translationSourceLang}
-                        onChange={(e) => setTranslationSourceLang(e.target.value)}
-                        className="px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      >
-                        <option value="EN">英語</option>
-                        <option value="JA">日本語</option>
-                      </select>
-                      <button
-                        onClick={swapTranslationLanguages}
-                        className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-                        title="言語を入れ替え"
-                      >
-                        <ArrowRightLeft className="w-4 h-4 text-gray-600" />
-                      </button>
-                      <select
-                        value={translationTargetLang}
-                        onChange={(e) => setTranslationTargetLang(e.target.value)}
-                        className="px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      >
-                        <option value="EN">英語</option>
-                        <option value="JA">日本語</option>
-                      </select>
-                      <input
-                        type="text"
-                        value={translationInput}
-                        onChange={(e) => setTranslationInput(e.target.value)}
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
-                            handleQuickTranslate()
-                          }
-                        }}
-                        placeholder={translationSourceLang === 'EN' ? '英語を入力...' : '日本語を入力...'}
-                        className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      />
-                      <button
-                        onClick={handleQuickTranslate}
-                        disabled={!translationInput.trim() || isTranslating}
-                        className="px-4 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isTranslating ? '翻訳中...' : '翻訳'}
-                      </button>
-                    </div>
-                    {translationOutput && (
-                      <div className="mt-2 px-3 py-2 bg-white rounded border border-gray-200 text-sm text-gray-900">
-                        {translationOutput}
-                      </div>
-                    )}
-                  </div>
                 </div>
               </>
             )}
@@ -512,6 +498,147 @@ export default function ChatInterface() {
                   }
                 }}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 翻訳ツールモーダル */}
+      {showTranslationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl h-full md:h-auto md:max-h-[90vh] flex flex-col">
+            {/* モーダルヘッダー */}
+            <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                <Languages className="w-6 h-6 text-blue-600" />
+                <h2 className="text-xl font-bold text-gray-900">翻訳ツール</h2>
+              </div>
+              <button
+                onClick={() => setShowTranslationModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                title="閉じる"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+
+            {/* モーダルコンテンツ */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+              {/* 言語選択 */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <select
+                  value={translationSourceLang}
+                  onChange={(e) => handleSourceLangChange(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+                >
+                  <option value="EN">英語</option>
+                  <option value="JA">日本語</option>
+                </select>
+
+                <button
+                  onClick={swapTranslationLanguages}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="言語を入れ替え"
+                >
+                  <ArrowRightLeft className="w-5 h-5 text-gray-600" />
+                </button>
+
+                <select
+                  value={translationTargetLang}
+                  onChange={(e) => handleTargetLangChange(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+                >
+                  <option value="EN">英語</option>
+                  <option value="JA">日本語</option>
+                </select>
+              </div>
+
+              {/* 入力エリア */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {translationSourceLang === 'EN' ? '英語' : '日本語'} テキスト
+                </label>
+                <textarea
+                  value={translationInput}
+                  onChange={(e) => setTranslationInput(e.target.value)}
+                  placeholder={translationSourceLang === 'EN' ? '英語を入力...' : '日本語を入力...'}
+                  className="w-full h-32 md:h-40 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm md:text-base"
+                />
+              </div>
+
+              {/* 翻訳ボタン */}
+              <button
+                onClick={handleQuickTranslate}
+                disabled={!translationInput.trim() || isTranslating}
+                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm md:text-base"
+              >
+                {isTranslating ? '翻訳中...' : '翻訳'}
+              </button>
+
+              {/* 出力エリア */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {translationTargetLang === 'JA' ? '日本語' : '英語'} 翻訳結果
+                </label>
+                <div className="w-full h-32 md:h-40 px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 overflow-y-auto text-sm md:text-base">
+                  {translationOutput || (
+                    <span className="text-gray-400">
+                      {translationTargetLang === 'JA' ? '翻訳結果がここに表示されます' : 'Translation will appear here'}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 設定モーダル */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            {/* モーダルヘッダー */}
+            <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                <Settings className="w-6 h-6 text-blue-600" />
+                <h2 className="text-xl font-bold text-gray-900">設定</h2>
+              </div>
+              <button
+                onClick={() => setShowSettingsModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                title="閉じる"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+
+            {/* モーダルコンテンツ */}
+            <div className="p-4 md:p-6 space-y-6">
+              {/* 読み上げ速度設定 */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-sm font-medium text-gray-700">
+                    読み上げ速度
+                  </label>
+                  <span className="text-sm font-semibold text-blue-600">
+                    {speechRate.toFixed(1)}x
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="2.0"
+                  step="0.1"
+                  value={speechRate}
+                  onChange={(e) => setSpeechRate(parseFloat(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>0.5x (遅い)</span>
+                  <span>1.0x (標準)</span>
+                  <span>2.0x (速い)</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
