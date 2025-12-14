@@ -39,7 +39,11 @@ RULES:
 1. user_transcript MUST contain the actual English words from the audio - transcribe it accurately
 2. If the audio is unclear, write what you heard as best as possible
 3. Return ONLY the JSON object - no markdown, no code blocks, no explanations, no extra text
-4. The JSON must be valid and parseable`
+4. The JSON must be valid and parseable
+5. RESPONSE LENGTH: Your English response (ai_response_en) MUST be concise - maximum 3-4 sentences. Avoid lengthy explanations and keep responses brief to maintain conversation flow
+6. NO MARKUP: STRICTLY PROHIBITED to use any markdown or formatting symbols such as asterisks (*), bold markers (**), or any other decorative markup in ai_response_en or ai_response_jp. Use plain text only
+7. CONVERSATION FLOW: Always ask questions to the user to maintain conversation tempo and continuity. Prioritize keeping the conversation engaging and active
+8. JSON FORMAT STRICT: You MUST maintain the exact JSON structure specified above. Do not deviate from this format under any circumstances`
 
     // 会話履歴を構築（Gemini APIの形式に合わせる）
     const history = conversationHistory?.map((msg: { role: string; parts: string }) => {
