@@ -107,6 +107,11 @@ export default function ChatInterface() {
 
   const startRecording = async () => {
     try {
+      // 音声読み上げを中断
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel()
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm',
